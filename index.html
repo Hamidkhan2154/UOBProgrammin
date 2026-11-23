@@ -40,8 +40,8 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--bd);border-
   <h1 id="title"></h1>
   <ul>
     <li id="rules1"></li>
-    <li>You can move between questions using Previous / Next or the question numbers. Unanswered questions score zero.</li>
-    <li>Leaving this page, switching apps or tabs, or exiting fullscreen is recorded as a violation.</li>
+    <li>You cannot go back to previous questions. You may skip a question, but you cannot return to it (it scores zero).</li>
+    <li>Do not switch windows, tabs or apps, and do not exit fullscreen. Doing so submits your quiz immediately.</li>
     <li id="rules2"></li>
   </ul>
   <h2 style="margin-top:18px">Student information (all fields required)</h2>
@@ -61,9 +61,7 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--bd);border-
   <div class="bar"><span id="prog"></span><span id="viol"></span><span id="time"></span></div>
   <h2 id="q"></h2>
   <div id="opts"></div>
-  <button class="btn" id="prev">Previous</button>
-  <button class="btn alt" id="next">Next</button>
-  <div class="nav" id="nav"></div>
+  <button class="btn" id="next">Next</button>
 </div>
 
 <div id="done" class="card hide">
@@ -71,7 +69,9 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--bd);border-
   <p id="why"></p>
   <h2 id="score"></h2>
   <table class="res" id="res"></table>
-  <p style="margin-top:18px">Copy this result and send it to your teacher:</p>
+  <p id="saved" style="font-weight:600"></p>
+  <button class="btn hide" id="retry">Retry saving</button>
+  <p style="margin-top:18px">Backup copy of your result:</p>
   <pre id="sum"></pre>
   <button class="btn" id="copy">Copy result</button>
   <button class="btn alt" id="copyrow">Copy row for Excel</button>
@@ -99,7 +99,8 @@ pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--bd);border-
 const QUIZ_SETTINGS = {
   title: "CS-102 Computer Programming: Quiz",
   minutes: 60,              // total time allowed
-  maxViolations: 3,         // auto-submit when reached
+  maxViolations: 1,         // 1 = switching window / exiting fullscreen submits the quiz immediately
+  resultEndpoint: "",       // PASTE your Google Apps Script web app URL here (ends with /exec)
   marksPerQuestion: 1,
   shuffleQuestions: true,   // each student sees a different order
   shuffleOptions: true,     // options appear in a different order
@@ -799,7 +800,7 @@ const bankErrs = checkBank();
 
 $("title").textContent = S.title;
 $("rules1").textContent = `You have ${S.minutes} minutes and ${questionBank.length} questions (${S.marksPerQuestion} mark each).`;
-$("rules2").textContent = `After ${S.maxViolations} violations the quiz is submitted automatically.`;
+$("rules2").textContent = S.maxViolations<=1 ? "There is no second warning: your result is saved automatically when the quiz ends." : `After ${S.maxViolations} violations the quiz is submitted automatically.`;
 $("sect").innerHTML = '<option value="">Select your section</option>' + S.sections.map(s=>`<option>${s}</option>`).join("");
 if(bankErrs.length){ $("bankerr").textContent="Question bank error: "+bankErrs.join(" "); $("bankerr").classList.remove("hide"); }
 
@@ -854,19 +855,10 @@ function show(){
     b.onclick = () => { answers[idx]=i; show(); };
     $("opts").appendChild(b);
   });
-  $("prev").disabled = idx===0;
   $("next").textContent = idx===qs.length-1 ? "Submit" : "Next";
-  $("nav").innerHTML = "";
-  qs.forEach((_,i) => {
-    const b = document.createElement("button");
-    b.className = "nv" + (answers[i]!==null ? " ans" : "") + (i===idx ? " cur" : ""); b.textContent = i+1;
-    b.onclick = () => { idx=i; show(); };
-    $("nav").appendChild(b);
-  });
 }
 function updViol(){ $("viol").textContent = `Violations: ${viol}/${S.maxViolations}`; $("viol").className = viol ? "warn" : ""; }
 
-$("prev").onclick = () => { if (idx>0) { idx--; show(); } };
 $("next").onclick = () => {
   if (idx<qs.length-1) { idx++; show(); return; }
   const un = answers.filter(a=>a===null).length;
@@ -879,9 +871,10 @@ $("cfyes").onclick = () => finish("You submitted the quiz.");
 function violation(reason){
   if (!running) return;
   const now = Date.now();
+  if (now - startAt < 2500) return;   // ignore events caused by entering fullscreen
   if (now - lastV < 1500) return;
   lastV = now; viol++; log.push(reason); updViol();
-  if (viol >= S.maxViolations) return finish("Auto-submitted: too many violations.");
+  if (viol >= S.maxViolations) return finish(S.maxViolations<=1 ? "Auto-submitted: " + reason + "." : "Auto-submitted: too many violations.");
   $("ovmsg").textContent = `${reason}. Violation ${viol} of ${S.maxViolations}. The quiz will be submitted automatically at ${S.maxViolations}.`;
   $("ov").style.display = "flex";
 }
@@ -891,9 +884,9 @@ document.addEventListener("visibilitychange", () => { if (document.hidden) viola
 window.addEventListener("blur", () => violation("The quiz window lost focus"));
 document.addEventListener("fullscreenchange", () => { if (fullSupported && running && !inFull()) violation("You exited fullscreen"); });
 document.addEventListener("webkitfullscreenchange", () => { if (fullSupported && running && !inFull()) violation("You exited fullscreen"); });
-window.addEventListener("beforeunload", e => { if (running) { e.preventDefault(); e.returnValue=""; } });
+window.addEventListener("beforeunload", e => { if (running || saving) { e.preventDefault(); e.returnValue=""; } });
 
-let lastRow = "";
+let lastRow = "", lastRec = null, saving = false;
 function finish(why){
   if (!running) return;
   running=false; clearInterval(timer); $("ov").style.display="none"; $("cf").style.display="none";
@@ -940,8 +933,33 @@ Finished: ${new Date().toLocaleString()}
 Status: ${why}
 Incorrect question numbers: ${wrong.sort(num).join(", ") || "none"}
 Unattempted question numbers: ${skipped.sort(num).join(", ") || "none"}`;
+  lastRec = {id:(window.crypto&&crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(36).slice(2)),
+    finishedAt:new Date().toISOString(), name:info.name, father:info.father, roll:info.roll, section:info.section, quiz:S.title,
+    total, attempted, correct, incorrect, unattempted:unatt, obtained, totalMarks, pct:Number(pct),
+    violations:viol, violationLog:log.join("; "), secondsUsed:used, status:why,
+    incorrectIds:wrong.join(", "), unattemptedIds:skipped.join(", ")};
+  saveResult();
   lastRow = [info.name,info.father,info.roll,info.section,total,attempted,correct].map(v=>String(v).replace(/[\t\r\n]+/g," ")).join("\t");
 }
+
+async function saveResult(){
+  const el=$("saved"), rb=$("retry");
+  rb.classList.add("hide");
+  if (!S.resultEndpoint) { el.className="warn"; el.textContent="Result saving is not set up. Please copy your result below and send it to your teacher."; return; }
+  saving=true; el.className=""; el.textContent="Saving your result… please do not close this page.";
+  for (let n=1;n<=3;n++){
+    try {
+      const r = await fetch(S.resultEndpoint,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(lastRec)});
+      const j = await r.json();
+      if (j && j.ok) { saving=false; el.textContent="✓ Your result has been recorded. You may close this page."; return; }
+    } catch(e){}
+    await new Promise(res=>setTimeout(res,1500*n));
+  }
+  saving=false; el.className="warn";
+  el.textContent="Your result could not be saved. Check your internet connection and press Retry. If it still fails, copy the result below and send it to your teacher.";
+  rb.classList.remove("hide");
+}
+$("retry").onclick = saveResult;
 
 async function copyText(text, btn, label){
   try { await navigator.clipboard.writeText(text); btn.textContent="Copied ✓"; }

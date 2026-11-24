@@ -122,243 +122,185 @@ const QUIZ_SETTINGS = {
    To change the quiz length, add or remove whole { ... }, blocks.
    Keep the commas and quotes exactly as in the examples below.
    ================================================ */
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CS-102 Quiz</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--fg:#1c1f26;--mut:#5d6573;--acc:#2563eb;--bad:#d92d20;--ok:#16a34a;--bd:#dfe3ea;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root{--bg:#12141a;--card:#1b1e26;--fg:#eceef3;--mut:#9aa3b2;--acc:#5b8cff;--bad:#ff6b5e;--ok:#4ade80;--bd:#2c313c}}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+body{padding:16px;user-select:none;-webkit-user-select:none}
+.wrap{max-width:680px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:20px;margin-top:12px}
+h1{font-size:1.4rem;margin:8px 0}h2{font-size:1.1rem;margin:0 0 12px}
+p,li{color:var(--mut)}
+label{display:block;font-weight:600;font-size:.9rem;margin-top:12px;margin-bottom:4px}
+input,select{width:100%;box-sizing:border-box;padding:12px;font-size:1rem;font-family:inherit;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--fg);user-select:text;-webkit-user-select:text}
+button{font:inherit;cursor:pointer}
+.btn{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:12px 18px;font-weight:600;margin-top:14px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.alt{background:var(--mut);margin-left:8px}
+.opt{display:block;width:100%;text-align:left;background:var(--bg);color:var(--fg);border:2px solid var(--bd);border-radius:10px;padding:12px;margin-top:8px;white-space:pre-wrap;font-family:inherit}
+.opt.sel{border-color:var(--acc)}
+.bar{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-weight:600;font-size:.95rem}
+.warn{color:var(--bad)}
+#q{margin-top:16px;white-space:pre-wrap;font-family:inherit}
+.nav{display:grid;grid-template-columns:repeat(auto-fill,minmax(38px,1fr));gap:6px;margin-top:18px}
+.nv{padding:6px 0;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--fg);font-size:.8rem}
+.nv.ans{background:var(--acc);border-color:var(--acc);color:#fff}
+.nv.cur{outline:2px solid var(--fg);outline-offset:1px}
+.ovl{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;padding:20px;z-index:9}
+.ovl .card{max-width:420px;text-align:center}
+.hide{display:none}
+table.res{border-collapse:collapse;width:100%;margin-top:8px}
+table.res td{padding:7px 8px;border-bottom:1px solid var(--bd);color:var(--fg)}
+table.res td:first-child{color:var(--mut);width:48%}
+pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:12px;color:var(--fg);user-select:text;-webkit-user-select:text}
+</style></head><body>
+<div class="wrap">
+
+<div id="start" class="card">
+  <h1 id="title"></h1>
+  <ul>
+    <li id="rules1"></li>
+    <li>You cannot go back to previous questions. You may skip a question, but you cannot return to it (it scores zero).</li>
+    <li>Do not switch windows, tabs or apps, and do not exit fullscreen. Doing so submits your quiz immediately.</li>
+    <li id="rules2"></li>
+  </ul>
+  <h2 style="margin-top:18px">Student information (all fields required)</h2>
+  <label for="sname">Student Name</label>
+  <input id="sname" autocomplete="off">
+  <label for="fname">Father's Name</label>
+  <input id="fname" autocomplete="off">
+  <label for="roll">Roll Number</label>
+  <input id="roll" autocomplete="off">
+  <label for="sect">Section</label>
+  <select id="sect"></select>
+  <p id="bankerr" class="warn hide"></p>
+  <button class="btn" id="go" disabled>Start quiz</button>
+</div>
+
+<div id="quiz" class="card hide">
+  <div class="bar"><span id="prog"></span><span id="viol"></span><span id="time"></span></div>
+  <h2 id="q"></h2>
+  <div id="opts"></div>
+  <button class="btn" id="next">Next</button>
+</div>
+
+<div id="done" class="card hide">
+  <h1>Quiz finished</h1>
+  <p id="why"></p>
+  <h2 id="score"></h2>
+  <table class="res" id="res"></table>
+  <p id="saved" style="font-weight:600"></p>
+  <button class="btn hide" id="retry">Retry saving</button>
+  <p style="margin-top:18px">Backup copy of your result:</p>
+  <pre id="sum"></pre>
+  <button class="btn" id="copy">Copy result</button>
+  <button class="btn alt" id="copyrow">Copy row for Excel</button>
+</div>
+
+</div>
+
+<div class="ovl" id="ov"><div class="card">
+  <h2 class="warn">⚠ Warning</h2>
+  <p id="ovmsg"></p>
+  <button class="btn" id="back">Return to quiz</button>
+</div></div>
+
+<div class="ovl" id="cf"><div class="card">
+  <h2>Submit quiz?</h2>
+  <p id="cfmsg"></p>
+  <button class="btn" id="cfyes">Submit now</button>
+  <button class="btn alt" id="cfno">Keep working</button>
+</div></div>
+
+<script>
+/* ================================================
+   QUIZ SETTINGS: edit here (timer, rules, sections)
+   ================================================ */
+const QUIZ_SETTINGS = {
+  title: "CS-102 Computer Programming: Quiz",
+  minutes: 50,              // total time allowed
+  maxViolations: 1,         // 1 = switching window / exiting fullscreen submits the quiz immediately
+  resultEndpoint: "https://script.google.com/macros/s/AKfycbzXgUA5sklkGLR2y6-8Qrx8qS3o3nnQJj4uTnfByYeNrQj3uwWDinaGwxCTYX7GqltK/exec",       // PASTE your Google Apps Script web app URL here (ends with /exec)
+  marksPerQuestion: 1,
+  shuffleQuestions: true,   // each student sees a different order
+  shuffleOptions: true,     // options appear in a different order
+  sections: ["CS Section A","CS Section B","AI Section A","AI Section B","Cyber Security Section A"]
+};
+
+/* ================================================
+   TEACHER QUESTION BANK
+   Edit, replace, or update questions in this section.
+   Do not modify the quiz engine below.
+
+   HOW TO EDIT A QUESTION
+   - id            : question number (keep unique; matches the Excel answer key)
+   - topic         : topic name (used for the topic-wise answer key)
+   - question      : the question text. Use \n for a new line (code snippets).
+   - options       : exactly 4 options, in the order A, B, C, D
+   - correctAnswer : position of the right option: 0 = A, 1 = B, 2 = C, 3 = D
+   - explanation   : short reason (kept for the teacher; not shown to students)
+   To change the quiz length, add or remove whole { ... }, blocks.
+   Keep the commas and quotes exactly as in the examples below.
+   ================================================ */
 const questionBank = [
   {
     id: 1,
-    topic: "Variables and Identifiers",
-    question: "Which of the following is a valid C++ variable name?",
+    topic: "Introduction to C++",
+    question: "Who developed the C++ programming language?",
     options: [
-      "_total1",
-      "2a_CS",
-      "my class",
-      "rate$"
+      "Bjarne Stroustrup",
+      "Dennis Ritchie",
+      "James Gosling",
+      "Guido van Rossum"
     ],
     correctAnswer: 0,   // A
-    explanation: "A name must begin with a letter or underscore and contain only letters, digits and underscores."
+    explanation: "C++ was developed by Bjarne Stroustrup at Bell Labs as an extension of the C language."
   },
   {
     id: 2,
-    topic: "Variables and Identifiers",
-    question: "Which of these CANNOT be used as a variable name in C++?",
+    topic: "Introduction to C++",
+    question: "What is the usual file extension of a C++ source file?",
     options: [
-      "totalMarks",
-      "studentAge",
-      "Class1",
-      "class"
+      ".exe",
+      ".cpp",
+      ".java",
+      ".py"
     ],
-    correctAnswer: 3,   // D
-    explanation: "class is a reserved keyword, and keywords cannot be used as identifiers."
+    correctAnswer: 1,   // B
+    explanation: "C++ source files are saved with the .cpp extension. The .exe file is the program produced after compiling."
   },
   {
     id: 3,
-    topic: "Variables and Identifiers",
-    question: "What does an uninitialized local variable contain in C++?",
+    topic: "Introduction to C++",
+    question: "What does a compiler do?",
     options: [
-      "A null character",
-      "Always 1",
-      "Always 0",
-      "A garbage (unpredictable) value"
+      "Translates the C++ source code into machine code",
+      "Deletes the errors automatically",
+      "Checks only the comments of a program",
+      "Types the program for the programmer"
     ],
-    correctAnswer: 3,   // D
-    explanation: "Uninitialized local variables hold garbage values until they are explicitly initialized."
+    correctAnswer: 0,   // A
+    explanation: "A compiler translates the human-readable source code into machine code that the computer can run, and reports errors it finds."
   },
   {
     id: 4,
-    topic: "Data Types and Constants",
-    question: "How many bytes does a double typically occupy in memory?",
+    topic: "Program Structure",
+    question: "Which of the following lines is a preprocessor directive?",
     options: [
-      "8 bytes",
-      "4 bytes",
-      "16 bytes",
-      "2 bytes"
+      "int main()",
+      "return 0;",
+      "#include <iostream>",
+      "using namespace std;"
     ],
-    correctAnswer: 0,   // A
-    explanation: "double is double-precision floating point and uses 8 bytes (float uses 4)."
+    correctAnswer: 2,   // C
+    explanation: "Lines that begin with # are preprocessor directives. They are handled before the program is compiled."
   },
   {
     id: 5,
-    topic: "Input and Output",
-    question: "Which operator is used with cout to send data to standard output?",
-    options: [
-      "<< (insertion operator)",
-      "== (equality operator)",
-      ">> (extraction operator)",
-      "-> (arrow operator)"
-    ],
-    correctAnswer: 0,   // A
-    explanation: "cout uses the insertion operator <<; cin uses the extraction operator >>."
-  },
-  {
-    id: 6,
-    topic: "Input and Output",
-    question: "Which header file is needed to use stream manipulators such as setprecision() and setw()?",
-    options: [
-      "<cmath>",
-      "<string>",
-      "<iomanip>",
-      "<cstdlib>"
-    ],
-    correctAnswer: 2,   // C
-    explanation: "setprecision() and setw() are declared in <iomanip>."
-  },
-  {
-    id: 7,
-    topic: "Input and Output",
-    question: "Which statement correctly reads a full line containing spaces into the string variable address?",
-    options: [
-      "getline(cin, address);",
-      "cin.read(address);",
-      "cin >> address;",
-      "cout << address;"
-    ],
-    correctAnswer: 0,   // A
-    explanation: "cin >> stops at whitespace, so getline(cin, var) is used to read a whole line."
-  },
-  {
-    id: 8,
-    topic: "Data Types and Constants",
-    question: "What is the output of this code?\n\nchar i = 'b';\ncout << int(i);",
-    options: [
-      "b",
-      "98",
-      "97",
-      "2"
-    ],
-    correctAnswer: 1,   // B
-    explanation: "'a' is ASCII 97, so 'b' is 98. int(i) converts the character to its numeric code."
-  },
-  {
-    id: 9,
-    topic: "Data Types and Constants",
-    question: "A program reads a lowercase letter into letter and prints (letter - 'a' + 1). If the user enters 'e', what is printed?",
-    options: [
-      "4",
-      "101",
-      "e",
-      "5"
-    ],
-    correctAnswer: 3,   // D
-    explanation: "'e' - 'a' = 4, plus 1 gives 5, which is the alphabet position of e."
-  },
-  {
-    id: 10,
-    topic: "Data Types and Constants",
-    question: "How do 'x' and \"x\" differ in C++?",
-    options: [
-      "They are identical",
-      "\"x\" is stored in exactly one byte",
-      "'x' is a string and \"x\" is a character",
-      "'x' is a single character; \"x\" is a string literal that also stores the null terminator '\\0'"
-    ],
-    correctAnswer: 3,   // D
-    explanation: "Single quotes make a char; double quotes make a string literal, which ends with '\\0'."
-  },
-  {
-    id: 11,
-    topic: "Input and Output",
-    question: "Which escape sequence inserts a horizontal tab?",
-    options: [
-      "\\n",
-      "\\t",
-      "\\r",
-      "\\a"
-    ],
-    correctAnswer: 1,   // B
-    explanation: "\\t = tab, \\n = newline, \\r = carriage return, \\a = alert/bell."
-  },
-  {
-    id: 12,
-    topic: "Arithmetic Operators and Precedence",
-    question: "What is the value of 7 / 2 when both operands are integers?",
-    options: [
-      "4",
-      "3",
-      "3.5",
-      "2"
-    ],
-    correctAnswer: 1,   // B
-    explanation: "Integer division truncates the fractional part, so 7 / 2 = 3."
-  },
-  {
-    id: 13,
-    topic: "Arithmetic Operators and Precedence",
-    question: "What is the value of 17 % 5 ?",
-    options: [
-      "0",
-      "3",
-      "2",
-      "3.4"
-    ],
-    correctAnswer: 2,   // C
-    explanation: "The modulus operator returns the remainder: 17 = 3*5 + 2."
-  },
-  {
-    id: 14,
-    topic: "Relational and Logical Operators",
-    question: "A programmer wants to compare x with 4 but writes: if (x = 4) { ... }\nWhat is the problem?",
-    options: [
-      "It causes a syntax error",
-      "It assigns 4 to x, so the condition is always true",
-      "It compares x with 4 correctly",
-      "It sets x to 0"
-    ],
-    correctAnswer: 1,   // B
-    explanation: "= is assignment. (x = 4) evaluates to 4 (non-zero, true). Use == to compare."
-  },
-  {
-    id: 15,
-    topic: "if and if-else Statements",
-    question: "What is the value of rate if hours = 30?\n\nrate = (hours > 40) ? 3.50 : 0.25;",
-    options: [
-      "30",
-      "0.25",
-      "3.50",
-      "40"
-    ],
-    correctAnswer: 1,   // B
-    explanation: "hours > 40 is false, so the conditional operator picks the value after the colon: 0.25."
-  },
-  {
-    id: 16,
-    topic: "Arithmetic Operators and Precedence",
-    question: "In the expression (a + b) * (1 / 2) with integer literals, what is the value of (1 / 2) and why?",
-    options: [
-      "0, because integer division truncates the fraction",
-      "0.5, because C++ always uses floating point",
-      "1, because the result is rounded up",
-      "It is a compile error"
-    ],
-    correctAnswer: 0,   // A
-    explanation: "Both operands are int, so 1 / 2 = 0. Writing (1.0 / 2) fixes the bug."
-  },
-  {
-    id: 17,
-    topic: "Data Types and Constants",
-    question: "What is the largest value a typical 4-byte signed int can store?",
-    options: [
-      "2,147,483,647",
-      "4,294,967,295",
-      "32,767",
-      "2,147,483,648"
-    ],
-    correctAnswer: 0,   // A
-    explanation: "A 4-byte signed int ranges from -2,147,483,648 to 2,147,483,647."
-  },
-  {
-    id: 18,
-    topic: "Data Types and Constants",
-    question: "What is the range of a typical 4-byte unsigned int?",
-    options: [
-      "0 to 255",
-      "0 to 4,294,967,295",
-      "-2,147,483,648 to 2,147,483,647",
-      "0 to 65,535"
-    ],
-    correctAnswer: 1,   // B
-    explanation: "Unsigned types have no negative values, so 4 bytes gives 0 to 4,294,967,295."
-  },
-  {
-    id: 19,
     topic: "Program Structure",
     question: "Which pair of lines is normally written at the top of a beginner C++ program so that cout and cin can be used without the std:: prefix?",
     options: [
@@ -371,319 +313,98 @@ const questionBank = [
     explanation: "#include <iostream> provides cout and cin, and using namespace std; lets you write them without the std:: prefix."
   },
   {
-    id: 20,
-    topic: "Variables and Identifiers",
-    question: "In C++, totalMarks and TotalMarks are:",
+    id: 6,
+    topic: "Program Structure",
+    question: "Where does the execution of every C++ program begin?",
     options: [
-      "The same unless one is declared const",
-      "The same identifier",
-      "Two different identifiers, because C++ is case-sensitive",
-      "Illegal, because they differ only in case"
+      "The first #include line",
+      "The using namespace std; statement",
+      "The main() function",
+      "The first function written in the file"
     ],
     correctAnswer: 2,   // C
-    explanation: "C++ is case-sensitive, so differently capitalised names are different identifiers."
+    explanation: "Execution always starts at the main() function, whatever its position in the file."
   },
   {
-    id: 21,
-    topic: "Data Types and Constants",
-    question: "How many bytes of memory does the string literal \"A\" need?",
+    id: 7,
+    topic: "Program Structure",
+    question: "In the line  int main()  what does the keyword int tell us?",
     options: [
-      "1 byte",
-      "3 bytes",
-      "4 bytes",
-      "2 bytes ('A' plus the null terminator)"
+      "main() receives an integer from the user",
+      "The program can use only integers",
+      "main() must contain an integer variable",
+      "The function returns an integer value"
     ],
     correctAnswer: 3,   // D
-    explanation: "A string literal needs length + 1 bytes for the terminating '\\0'."
+    explanation: "int is the return type of main(). The function sends an integer value back to the operating system."
   },
   {
-    id: 22,
-    topic: "Data Types and Constants",
-    question: "In modern C++, what is preferred over #define macros for fixed values, for type safety?",
+    id: 8,
+    topic: "Program Structure",
+    question: "Which symbols enclose the body of the main() function?",
     options: [
-      "static_cast",
-      "setw",
-      "goto",
-      "const or constexpr"
+      "Parentheses ( )",
+      "Curly braces { }",
+      "Square brackets [ ]",
+      "Angle brackets < >"
+    ],
+    correctAnswer: 1,   // B
+    explanation: "The statements of a function are written between an opening { and a closing }."
+  },
+  {
+    id: 9,
+    topic: "Program Structure",
+    question: "Which symbol is used to end most C++ statements?",
+    options: [
+      ". (full stop)",
+      ", (comma)",
+      ": (colon)",
+      "; (semicolon)"
     ],
     correctAnswer: 3,   // D
-    explanation: "const and constexpr are type-safe, unlike preprocessor macros."
+    explanation: "Most C++ statements, such as declarations and cout statements, end with a semicolon."
   },
   {
-    id: 23,
-    topic: "Data Types and Constants",
-    question: "What is the ASCII difference between 'a' (97) and 'A' (65)?",
+    id: 10,
+    topic: "Program Structure",
+    question: "What is the output of this program?\n\n#include <iostream>\nusing namespace std;\nint main() {\n    cout << \"Hello\";\n    return 0;\n}",
     options: [
-      "64",
-      "32",
-      "26",
-      "48"
-    ],
-    correctAnswer: 1,   // B
-    explanation: "97 - 65 = 32. This offset is used for case conversion: ch - 'a' + 'A'."
-  },
-  {
-    id: 24,
-    topic: "Assignment, Increment and Decrement Operators",
-    question: "After:\nint a = 10;\nint b = a++;\nwhat are the values of a and b?",
-    options: [
-      "a = 10, b = 10",
-      "a = 10, b = 11",
-      "a = 11, b = 10",
-      "a = 11, b = 11"
-    ],
-    correctAnswer: 2,   // C
-    explanation: "Postfix a++ copies the current value (10) to b first, then increments a to 11."
-  },
-  {
-    id: 25,
-    topic: "Assignment, Increment and Decrement Operators",
-    question: "After:\nint x = 10;\nint y = ++x;\nwhat are the values of x and y?",
-    options: [
-      "x = 10, y = 10",
-      "x = 11, y = 11",
-      "x = 11, y = 10",
-      "x = 10, y = 11"
-    ],
-    correctAnswer: 1,   // B
-    explanation: "Prefix ++x increments first, so both x and y become 11."
-  },
-  {
-    id: 26,
-    topic: "Data Types and Constants",
-    question: "According to the lecture, which cast is preferred in modern C++ for safety?",
-    options: [
-      "cast<double>(a)",
-      "static_cast<double>(a)",
-      "(double)a",
-      "toDouble(a)"
-    ],
-    correctAnswer: 1,   // B
-    explanation: "Modern C++ prefers static_cast over C-style casts such as (type)."
-  },
-  {
-    id: 27,
-    topic: "Input and Output",
-    question: "Which stream manipulator sets the minimum field width of the next output item?",
-    options: [
-      "endl",
-      "setw(n)",
-      "fixed",
-      "setprecision(n)"
-    ],
-    correctAnswer: 1,   // B
-    explanation: "setw(n) sets the field width; setprecision(n) sets decimal precision; fixed forces fixed-point notation."
-  },
-  {
-    id: 28,
-    topic: "Arithmetic Operators and Precedence",
-    question: "In the reverse-a-3-digit-number program, which expression extracts the units (last) digit of num?",
-    options: [
-      "num % 10",
-      "num / 100",
-      "(num / 10) % 10",
-      "num / 10"
-    ],
-    correctAnswer: 0,   // A
-    explanation: "num % 10 gives the remainder after dividing by 10, i.e. the last digit."
-  },
-  {
-    id: 29,
-    topic: "Loops (for, while, do-while)",
-    question: "What is the output of this code?\n\nfor (int i = 1; i <= 3; i++)\n    cout << i << \" \";",
-    options: [
-      "1 2 3",
-      "0 1 2",
-      "1 2 3 4",
-      "3 2 1"
-    ],
-    correctAnswer: 0,   // A
-    explanation: "i starts at 1 and the loop runs while i <= 3, so it prints 1, 2 and 3."
-  },
-  {
-    id: 30,
-    topic: "Loops (for, while, do-while)",
-    question: "What is the output of this code?\n\nint n = 3;\nwhile (n > 0) {\n    cout << n << \" \";\n    n--;\n}",
-    options: [
-      "3 2 1",
-      "3 2 1 0",
-      "1 2 3",
-      "2 1 0"
-    ],
-    correctAnswer: 0,   // A
-    explanation: "n is printed and then decreased each time. The loop stops when n becomes 0, so 0 is never printed."
-  },
-  {
-    id: 31,
-    topic: "Loops (for, while, do-while)",
-    question: "How many times is \"Hello\" printed by this code?\n\nint x = 10;\ndo {\n    cout << \"Hello\";\n} while (x < 5);",
-    options: [
-      "Once",
-      "Zero times",
-      "Five times",
-      "Infinite times"
-    ],
-    correctAnswer: 0,   // A
-    explanation: "A do-while loop checks its condition after the body, so the body always runs at least once."
-  },
-  {
-    id: 32,
-    topic: "Relational and Logical Operators",
-    question: "What is printed by this code?\n\nbool flag = (5 > 3) && (2 > 4);\ncout << flag;",
-    options: [
-      "0",
-      "1",
-      "true",
-      "false"
-    ],
-    correctAnswer: 0,   // A
-    explanation: "5 > 3 is true and 2 > 4 is false, so true && false is false. cout prints a bool as 1 or 0, so 0 is shown."
-  },
-  {
-    id: 33,
-    topic: "if and if-else Statements",
-    question: "What is the output of this code?\n\nint age = 20;\nif (age >= 18) {\n    if (age >= 21)\n        cout << \"A\";\n    else\n        cout << \"B\";\n} else {\n    cout << \"C\";\n}",
-    options: [
-      "B",
-      "A",
-      "C",
-      "AB"
-    ],
-    correctAnswer: 0,   // A
-    explanation: "age >= 18 is true, so the inner if is tested. age >= 21 is false, so the inner else prints B."
-  },
-  {
-    id: 34,
-    topic: "if and if-else Statements",
-    question: "What value is stored in min?\n\nint i = 8, j = 5, min;\nmin = (i < j) ? i : j;",
-    options: [
-      "5",
-      "13",
-      "0",
-      "8"
-    ],
-    correctAnswer: 0,   // A
-    explanation: "i < j is false, so expr3 (j = 5) is the result."
-  },
-  {
-    id: 35,
-    topic: "if and if-else Statements",
-    question: "What happens when this code runs?\n\nif (-5)\n    cout << \"This works\";",
-    options: [
-      "It does not compile",
-      "It prints only if the value is exactly 1",
-      "It prints \"This works\", because any non-zero value is true",
-      "It never prints, because negative numbers are false"
-    ],
-    correctAnswer: 2,   // C
-    explanation: "In C++, zero is false and every non-zero value (including negative numbers) is true."
-  },
-  {
-    id: 36,
-    topic: "Relational and Logical Operators",
-    question: "What does the statement cout << (5 > 3); print?",
-    options: [
-      "0",
-      "1",
-      "-1",
-      "5"
-    ],
-    correctAnswer: 1,   // B
-    explanation: "5 > 3 is true, and cout prints true as 1 (false is printed as 0)."
-  },
-  {
-    id: 37,
-    topic: "if and if-else Statements",
-    question: "Consider (no braces):\nif (x > 0)\n    a = 1;\n    b = 2;\nWhich statement belongs to the if?",
-    options: [
-      "Both a = 1; and b = 2;",
-      "Neither",
-      "Only a = 1;",
-      "Only b = 2;"
-    ],
-    correctAnswer: 2,   // C
-    explanation: "Without braces, only the first statement after the if belongs to it. Using braces always is a safe habit."
-  },
-  {
-    id: 38,
-    topic: "if and if-else Statements",
-    question: "In an if-else statement, how many of the two branches execute?",
-    options: [
-      "Exactly one",
-      "Both, always",
-      "Zero or one",
-      "One or both"
-    ],
-    correctAnswer: 0,   // A
-    explanation: "Exactly one branch always runs, never both and never neither."
-  },
-  {
-    id: 39,
-    topic: "if and if-else Statements",
-    question: "In an else-if ladder, what happens after the first true condition is found?",
-    options: [
-      "Execution jumps back to the first condition",
-      "All remaining conditions are still tested",
-      "The program terminates",
-      "Its statement runs and the rest of the ladder is skipped"
+      "\"Hello\"",
+      "Hello 0",
+      "Nothing is printed",
+      "Hello"
     ],
     correctAnswer: 3,   // D
-    explanation: "Conditions are tested top to bottom; the first true one runs and the rest are skipped."
+    explanation: "cout prints the text Hello. The return 0; statement does not print anything."
   },
   {
-    id: 40,
-    topic: "if and if-else Statements",
-    question: "Why should a letter-grade ladder test grade >= 90 before grade >= 60?",
+    id: 11,
+    topic: "Program Structure",
+    question: "What is the error in this program?\n\n#include <iostream>\nusing namespace std;\nint main() {\n    cout << \"Welcome\"\n    return 0;\n}",
     options: [
-      "Otherwise the final else would be ignored",
-      "The compiler requires descending order",
-      "Otherwise a grade of 95 would match >= 60 first and print D",
-      "Because >= 90 is faster to evaluate"
+      "using namespace std; is written incorrectly",
+      "A semicolon is missing after cout << \"Welcome\"",
+      "return 0; is not allowed in main()",
+      "The header <stdio.h> is missing"
     ],
-    correctAnswer: 2,   // C
-    explanation: "Order matters: test the strictest condition first."
+    correctAnswer: 1,   // B
+    explanation: "The cout statement does not end with a semicolon, so the compiler reports an error."
   },
   {
-    id: 41,
-    topic: "Arithmetic Operators and Precedence",
-    question: "Why does  per = sum / 500 * 100;  give 0 for almost every input (all variables int)?",
+    id: 12,
+    topic: "Program Structure",
+    question: "What is the purpose of return 0; at the end of main()?",
     options: [
-      "sum / 500 is integer division and truncates to 0 before the multiplication",
-      "* has higher precedence than /",
-      "500 is too large for an int",
-      "per is declared unsigned"
-    ],
-    correctAnswer: 0,   // A
-    explanation: "Multiply first, then divide: per = sum * 100 / 500."
-  },
-  {
-    id: 42,
-    topic: "Assignment, Increment and Decrement Operators",
-    question: "What is the value of a after these statements?\n\nint a = 10;\na += 5;\na -= 3;\na *= 2;",
-    options: [
-      "24",
-      "12",
-      "30",
-      "22"
+      "It tells the operating system that the program ended successfully",
+      "It restarts the program",
+      "It prints 0 on the screen",
+      "It creates a variable named 0"
     ],
     correctAnswer: 0,   // A
-    explanation: "a += 5 makes 15, a -= 3 makes 12, and a *= 2 makes 24."
+    explanation: "Returning 0 from main() signals successful termination to the operating system."
   },
   {
-    id: 43,
-    topic: "Relational and Logical Operators",
-    question: "What does this code print for ANY input?\n\nint i;\ncin >> i;\nif (i = 5)\n    cout << \"You entered 5\";\nelse\n    cout << \"You entered something other than 5\";",
-    options: [
-      "Nothing; it does not compile",
-      "\"You entered something other than 5\", always",
-      "\"You entered 5\", always",
-      "\"You entered 5\" only when i is 5"
-    ],
-    correctAnswer: 2,   // C
-    explanation: "i = 5 assigns 5 to i (non-zero, so true). The correct comparison is i == 5."
-  },
-  {
-    id: 44,
+    id: 13,
     topic: "Program Structure",
     question: "What does returning a non-zero value from main() signal?",
     options: [
@@ -696,84 +417,687 @@ const questionBank = [
     explanation: "return 0 means success; a non-zero value means an error."
   },
   {
-    id: 45,
-    topic: "Relational and Logical Operators",
-    question: "Given  if (grade < 0 || grade > 100)  printing \"Invalid input!\", which value is rejected?",
+    id: 14,
+    topic: "Comments",
+    question: "Which symbol starts a single-line comment in C++?",
     options: [
-      "100",
-      "0",
-      "57",
-      "101"
+      "--",
+      "//",
+      "#",
+      "/*"
+    ],
+    correctAnswer: 1,   // B
+    explanation: "Everything after // up to the end of the line is a comment."
+  },
+  {
+    id: 15,
+    topic: "Comments",
+    question: "Which of the following is a correct multi-line comment in C++?",
+    options: [
+      "** This is a comment **",
+      "/* This is a comment */",
+      "// This is a comment //",
+      "<!-- This is a comment -->"
+    ],
+    correctAnswer: 1,   // B
+    explanation: "A multi-line comment starts with /* and ends with */."
+  },
+  {
+    id: 16,
+    topic: "Comments",
+    question: "How does the compiler treat comments in a program?",
+    options: [
+      "It reports them as errors",
+      "It prints them on the screen",
+      "It executes them",
+      "It ignores them"
     ],
     correctAnswer: 3,   // D
-    explanation: "Valid grades are 0 to 100 inclusive, so 101 triggers the error message."
+    explanation: "Comments are notes for humans. The compiler ignores them and they do not affect the output."
+  },
+  {
+    id: 17,
+    topic: "Comments",
+    question: "What is the output of this code?\n\ncout << \"A\"; // cout << \"B\";\ncout << \"C\";",
+    options: [
+      "ABC",
+      "AC",
+      "A",
+      "C"
+    ],
+    correctAnswer: 1,   // B
+    explanation: "The text after // is a comment and is ignored, so only A and C are printed."
+  },
+  {
+    id: 18,
+    topic: "Input and Output",
+    question: "Which operator is used with cout to send data to standard output?",
+    options: [
+      "<< (insertion operator)",
+      "== (equality operator)",
+      ">> (extraction operator)",
+      "-> (arrow operator)"
+    ],
+    correctAnswer: 0,   // A
+    explanation: "cout uses the insertion operator <<; cin uses the extraction operator >>."
+  },
+  {
+    id: 19,
+    topic: "Input and Output",
+    question: "What is the output of this code?\n\ncout << \"Hi\" << endl;\ncout << \"Bye\";",
+    options: [
+      "Only Bye",
+      "Hi and Bye on two separate lines",
+      "HiBye on one line",
+      "Hi endl Bye"
+    ],
+    correctAnswer: 1,   // B
+    explanation: "endl moves the cursor to the next line, so Bye is printed on a new line."
+  },
+  {
+    id: 20,
+    topic: "Input and Output",
+    question: "What is the output of this code?\n\ncout << \"5 + 3 = \" << 5 + 3;",
+    options: [
+      "8",
+      "5 + 3 = 53",
+      "5 + 3 = 8",
+      "5 + 3 = 5 + 3"
+    ],
+    correctAnswer: 2,   // C
+    explanation: "The text inside quotes is printed as it is, and 5 + 3 is calculated first, so it prints 5 + 3 = 8."
+  },
+  {
+    id: 21,
+    topic: "Input and Output",
+    question: "Which escape sequence inserts a horizontal tab?",
+    options: [
+      "\\n",
+      "\\t",
+      "\\r",
+      "\\a"
+    ],
+    correctAnswer: 1,   // B
+    explanation: "\\t = tab, \\n = newline, \\r = carriage return, \\a = alert/bell."
+  },
+  {
+    id: 22,
+    topic: "Input and Output",
+    question: "Which statement reads an integer from the keyboard into the variable age?",
+    options: [
+      "cin << age;",
+      "input(age);",
+      "cout >> age;",
+      "cin >> age;"
+    ],
+    correctAnswer: 3,   // D
+    explanation: "cin uses the extraction operator >> to read input into a variable."
+  },
+  {
+    id: 23,
+    topic: "Input and Output",
+    question: "Which statement correctly reads a full line containing spaces into the string variable address?",
+    options: [
+      "getline(cin, address);",
+      "cin.read(address);",
+      "cin >> address;",
+      "cout << address;"
+    ],
+    correctAnswer: 0,   // A
+    explanation: "cin >> stops at whitespace, so getline(cin, var) is used to read a whole line."
+  },
+  {
+    id: 24,
+    topic: "Input and Output",
+    question: "Which header file is needed to use stream manipulators such as setprecision() and setw()?",
+    options: [
+      "<cmath>",
+      "<string>",
+      "<iomanip>",
+      "<cstdlib>"
+    ],
+    correctAnswer: 2,   // C
+    explanation: "setprecision() and setw() are declared in <iomanip>."
+  },
+  {
+    id: 25,
+    topic: "Input and Output",
+    question: "Which stream manipulator sets the minimum field width of the next output item?",
+    options: [
+      "endl",
+      "setw(n)",
+      "fixed",
+      "setprecision(n)"
+    ],
+    correctAnswer: 1,   // B
+    explanation: "setw(n) sets the field width; setprecision(n) sets decimal precision; fixed forces fixed-point notation."
+  },
+  {
+    id: 26,
+    topic: "Variables and Identifiers",
+    question: "Which of the following is a valid C++ variable name?",
+    options: [
+      "_total1",
+      "2a_CS",
+      "my class",
+      "rate$"
+    ],
+    correctAnswer: 0,   // A
+    explanation: "A name must begin with a letter or underscore and contain only letters, digits and underscores."
+  },
+  {
+    id: 27,
+    topic: "Variables and Identifiers",
+    question: "Which of these CANNOT be used as a variable name in C++?",
+    options: [
+      "totalMarks",
+      "studentAge",
+      "Class1",
+      "class"
+    ],
+    correctAnswer: 3,   // D
+    explanation: "class is a reserved keyword, and keywords cannot be used as identifiers."
+  },
+  {
+    id: 28,
+    topic: "Variables and Identifiers",
+    question: "In C++, totalMarks and TotalMarks are:",
+    options: [
+      "The same unless one is declared const",
+      "The same identifier",
+      "Two different identifiers, because C++ is case-sensitive",
+      "Illegal, because they differ only in case"
+    ],
+    correctAnswer: 2,   // C
+    explanation: "C++ is case-sensitive, so differently capitalised names are different identifiers."
+  },
+  {
+    id: 29,
+    topic: "Variables and Identifiers",
+    question: "What does an uninitialized local variable contain in C++?",
+    options: [
+      "A null character",
+      "Always 1",
+      "Always 0",
+      "A garbage (unpredictable) value"
+    ],
+    correctAnswer: 3,   // D
+    explanation: "Uninitialized local variables hold garbage values until they are explicitly initialized."
+  },
+  {
+    id: 30,
+    topic: "Variables and Identifiers",
+    question: "Which statement correctly declares an integer variable named score and gives it the value 90?",
+    options: [
+      "int = score 90;",
+      "int score = 90;",
+      "integer score = 90;",
+      "score int = 90;"
+    ],
+    correctAnswer: 1,   // B
+    explanation: "A declaration is written as: data type, variable name, = value, semicolon."
+  },
+  {
+    id: 31,
+    topic: "Data Types and Constants",
+    question: "How many bytes does a double typically occupy in memory?",
+    options: [
+      "8 bytes",
+      "4 bytes",
+      "16 bytes",
+      "2 bytes"
+    ],
+    correctAnswer: 0,   // A
+    explanation: "double is double-precision floating point and uses 8 bytes (float uses 4)."
+  },
+  {
+    id: 32,
+    topic: "Data Types and Constants",
+    question: "What is the largest value a typical 4-byte signed int can store?",
+    options: [
+      "2,147,483,647",
+      "4,294,967,295",
+      "32,767",
+      "2,147,483,648"
+    ],
+    correctAnswer: 0,   // A
+    explanation: "A 4-byte signed int ranges from -2,147,483,648 to 2,147,483,647."
+  },
+  {
+    id: 33,
+    topic: "Data Types and Constants",
+    question: "What is the range of a typical 4-byte unsigned int?",
+    options: [
+      "0 to 255",
+      "0 to 4,294,967,295",
+      "-2,147,483,648 to 2,147,483,647",
+      "0 to 65,535"
+    ],
+    correctAnswer: 1,   // B
+    explanation: "Unsigned types have no negative values, so 4 bytes gives 0 to 4,294,967,295."
+  },
+  {
+    id: 34,
+    topic: "Data Types and Constants",
+    question: "What is the output of this code?\n\nchar i = 'b';\ncout << int(i);",
+    options: [
+      "b",
+      "98",
+      "97",
+      "2"
+    ],
+    correctAnswer: 1,   // B
+    explanation: "'a' is ASCII 97, so 'b' is 98. int(i) converts the character to its numeric code."
+  },
+  {
+    id: 35,
+    topic: "Data Types and Constants",
+    question: "A program reads a lowercase letter into letter and prints (letter - 'a' + 1). If the user enters 'e', what is printed?",
+    options: [
+      "4",
+      "101",
+      "e",
+      "5"
+    ],
+    correctAnswer: 3,   // D
+    explanation: "'e' - 'a' = 4, plus 1 gives 5, which is the alphabet position of e."
+  },
+  {
+    id: 36,
+    topic: "Data Types and Constants",
+    question: "What is the ASCII difference between 'a' (97) and 'A' (65)?",
+    options: [
+      "64",
+      "32",
+      "26",
+      "48"
+    ],
+    correctAnswer: 1,   // B
+    explanation: "97 - 65 = 32. This offset is used for case conversion: ch - 'a' + 'A'."
+  },
+  {
+    id: 37,
+    topic: "Data Types and Constants",
+    question: "How do 'x' and \"x\" differ in C++?",
+    options: [
+      "They are identical",
+      "\"x\" is stored in exactly one byte",
+      "'x' is a string and \"x\" is a character",
+      "'x' is a single character; \"x\" is a string literal that also stores the null terminator '\\0'"
+    ],
+    correctAnswer: 3,   // D
+    explanation: "Single quotes make a char; double quotes make a string literal, which ends with '\\0'."
+  },
+  {
+    id: 38,
+    topic: "Data Types and Constants",
+    question: "How many bytes of memory does the string literal \"A\" need?",
+    options: [
+      "1 byte",
+      "3 bytes",
+      "4 bytes",
+      "2 bytes ('A' plus the null terminator)"
+    ],
+    correctAnswer: 3,   // D
+    explanation: "A string literal needs length + 1 bytes for the terminating '\\0'."
+  },
+  {
+    id: 39,
+    topic: "Data Types and Constants",
+    question: "In modern C++, what is preferred over #define macros for fixed values, for type safety?",
+    options: [
+      "static_cast",
+      "setw",
+      "goto",
+      "const or constexpr"
+    ],
+    correctAnswer: 3,   // D
+    explanation: "const and constexpr are type-safe, unlike preprocessor macros."
+  },
+  {
+    id: 40,
+    topic: "Data Types and Constants",
+    question: "Which cast is preferred in modern C++ for safety?",
+    options: [
+      "cast<double>(a)",
+      "static_cast<double>(a)",
+      "(double)a",
+      "toDouble(a)"
+    ],
+    correctAnswer: 1,   // B
+    explanation: "Modern C++ prefers static_cast over C-style casts such as (type)."
+  },
+  {
+    id: 41,
+    topic: "Arithmetic Operators and Precedence",
+    question: "What is the value of 7 / 2 when both operands are integers?",
+    options: [
+      "4",
+      "3",
+      "3.5",
+      "2"
+    ],
+    correctAnswer: 1,   // B
+    explanation: "Integer division truncates the fractional part, so 7 / 2 = 3."
+  },
+  {
+    id: 42,
+    topic: "Arithmetic Operators and Precedence",
+    question: "What is the value of 17 % 5 ?",
+    options: [
+      "0",
+      "3",
+      "2",
+      "3.4"
+    ],
+    correctAnswer: 2,   // C
+    explanation: "The modulus operator returns the remainder: 17 = 3*5 + 2."
+  },
+  {
+    id: 43,
+    topic: "Arithmetic Operators and Precedence",
+    question: "In the expression (a + b) * (1 / 2) with integer literals, what is the value of (1 / 2) and why?",
+    options: [
+      "0, because integer division truncates the fraction",
+      "0.5, because C++ always uses floating point",
+      "1, because the result is rounded up",
+      "It is a compile error"
+    ],
+    correctAnswer: 0,   // A
+    explanation: "Both operands are int, so 1 / 2 = 0. Writing (1.0 / 2) fixes the bug."
+  },
+  {
+    id: 44,
+    topic: "Arithmetic Operators and Precedence",
+    question: "Which expression gives the last digit of the integer num (for example, 5 from 345)?",
+    options: [
+      "num % 10",
+      "num / 100",
+      "(num / 10) % 10",
+      "num / 10"
+    ],
+    correctAnswer: 0,   // A
+    explanation: "num % 10 gives the remainder after dividing by 10, i.e. the last digit."
+  },
+  {
+    id: 45,
+    topic: "Arithmetic Operators and Precedence",
+    question: "Why does  per = sum / 500 * 100;  give 0 for almost every input (all variables int)?",
+    options: [
+      "sum / 500 is integer division and truncates to 0 before the multiplication",
+      "* has higher precedence than /",
+      "500 is too large for an int",
+      "per is declared unsigned"
+    ],
+    correctAnswer: 0,   // A
+    explanation: "Multiply first, then divide: per = sum * 100 / 500."
   },
   {
     id: 46,
-    topic: "Switch Statement",
-    question: "What type of value must the controlling expression of a switch have?",
+    topic: "Assignment, Increment and Decrement Operators",
+    question: "After:\nint a = 10;\nint b = a++;\nwhat are the values of a and b?",
     options: [
-      "Any string",
-      "Any floating-point value",
-      "An integral value (such as int or char)",
-      "Only a boolean"
+      "a = 10, b = 10",
+      "a = 10, b = 11",
+      "a = 11, b = 10",
+      "a = 11, b = 11"
     ],
     correctAnswer: 2,   // C
-    explanation: "switch works on integral values; case labels must be unique constants."
+    explanation: "Postfix a++ copies the current value (10) to b first, then increments a to 11."
   },
   {
     id: 47,
-    topic: "Switch Statement",
-    question: "What happens in a switch if a case does not end with break?",
+    topic: "Assignment, Increment and Decrement Operators",
+    question: "After:\nint x = 10;\nint y = ++x;\nwhat are the values of x and y?",
     options: [
-      "The switch restarts from the top",
-      "A compile-time error",
-      "Execution falls through into the next case",
-      "The program exits"
+      "x = 10, y = 10",
+      "x = 11, y = 11",
+      "x = 11, y = 10",
+      "x = 10, y = 11"
     ],
-    correctAnswer: 2,   // C
-    explanation: "Without break, execution continues into following cases until a break or the closing brace."
+    correctAnswer: 1,   // B
+    explanation: "Prefix ++x increments first, so both x and y become 11."
   },
   {
     id: 48,
-    topic: "Switch Statement",
-    question: "If x is 1, what is printed?\n\nint x = 1;\nswitch (x) {\n  case 1: cout << \"one \";\n  case 2: cout << \"two \";\n          break;\n  default: cout << \"other \";\n}",
+    topic: "Assignment, Increment and Decrement Operators",
+    question: "What is the value of a after these statements?\n\nint a = 10;\na += 5;\na -= 3;\na *= 2;",
     options: [
-      "one two other",
-      "two",
-      "one",
-      "one two"
+      "24",
+      "12",
+      "30",
+      "22"
     ],
-    correctAnswer: 3,   // D
-    explanation: "Case 1 has no break, so it falls through into case 2, where break stops it."
+    correctAnswer: 0,   // A
+    explanation: "a += 5 makes 15, a -= 3 makes 12, and a *= 2 makes 24."
   },
   {
     id: 49,
-    topic: "Switch Statement",
-    question: "In switch (grade / 10) with stacked labels  case 10: case 9:  printing \"A\", what is printed for grade = 100?",
+    topic: "Relational and Logical Operators",
+    question: "What is printed by this code?\n\nbool flag = (5 > 3) && (2 > 4);\ncout << flag;",
     options: [
-      "B",
-      "F",
-      "Nothing",
-      "A"
+      "0",
+      "1",
+      "true",
+      "false"
     ],
-    correctAnswer: 3,   // D
-    explanation: "100 / 10 = 10, and case 10 shares the block with case 9, so A is printed."
+    correctAnswer: 0,   // A
+    explanation: "5 > 3 is true and 2 > 4 is false, so true && false is false. cout prints a bool as 1 or 0, so 0 is shown."
   },
   {
     id: 50,
-    topic: "Switch Statement",
-    question: "If no case label matches and the switch has no default, what happens?",
+    topic: "Relational and Logical Operators",
+    question: "What does the statement cout << (5 > 3); print?",
     options: [
-      "The last case executes",
-      "Nothing: the switch does nothing",
-      "The first case executes",
-      "A compile-time error"
+      "0",
+      "1",
+      "-1",
+      "5"
     ],
     correctAnswer: 1,   // B
-    explanation: "With no match and no default, control simply continues after the switch."
+    explanation: "5 > 3 is true, and cout prints true as 1 (false is printed as 0)."
   }
 ];
+
+
+/* ================================================
+   QUIZ ENGINE: no need to edit below this line
+   ================================================ */
+const S = QUIZ_SETTINGS;
+const $ = id => document.getElementById(id);
+const shuffle = a => { a = a.slice(); for (let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+let qs=[], answers=[], idx=0, viol=0, running=false, endAt=0, startAt=0, timer=null, lastV=0, log=[], info={};
+
+function checkBank(){
+  const errs=[], seen={};
+  if(!Array.isArray(questionBank)||!questionBank.length) return ["The question bank is empty."];
+  questionBank.forEach((x,n)=>{
+    const t="Question #"+(x&&x.id!==undefined?x.id:n+1);
+    if(!x||!x.question) errs.push(t+": missing question text.");
+    if(!x||!Array.isArray(x.options)||x.options.length!==4||x.options.some(o=>!String(o).trim())) errs.push(t+": needs exactly 4 non-empty options.");
+    if(!x||!Number.isInteger(x.correctAnswer)||x.correctAnswer<0||x.correctAnswer>3) errs.push(t+": correctAnswer must be 0, 1, 2 or 3.");
+    if(x&&seen[x.id]) errs.push(t+": duplicate id."); if(x) seen[x.id]=1;
+  });
+  return errs;
+}
+const bankErrs = checkBank();
+
+$("title").textContent = S.title;
+$("rules1").textContent = `You have ${S.minutes} minutes and ${questionBank.length} questions (${S.marksPerQuestion} mark each).`;
+$("rules2").textContent = S.maxViolations<=1 ? "There is no second warning: your result is saved automatically when the quiz ends." : `After ${S.maxViolations} violations the quiz is submitted automatically.`;
+$("sect").innerHTML = '<option value="">Select your section</option>' + S.sections.map(s=>`<option>${s}</option>`).join("");
+if(bankErrs.length){ $("bankerr").textContent="Question bank error: "+bankErrs.join(" "); $("bankerr").classList.remove("hide"); }
+
+const fields=["sname","fname","roll","sect"];
+const formOk = () => !bankErrs.length && fields.every(f => $(f).value.trim() !== "");
+fields.forEach(f => { $(f).addEventListener("input", ()=>$("go").disabled=!formOk()); $(f).addEventListener("change", ()=>$("go").disabled=!formOk()); });
+
+["copy","cut","paste","contextmenu","dragstart"].forEach(ev => document.addEventListener(ev, e => { if (running && !["INPUT","SELECT"].includes(e.target.tagName)) e.preventDefault(); }));
+document.addEventListener("keydown", e => {
+  if (!running) return;
+  const k = e.key.toLowerCase();
+  if (e.key === "F12" || e.key === "PrintScreen" || ((e.ctrlKey||e.metaKey) && ["c","v","x","u","s","p"].includes(k))) e.preventDefault();
+});
+
+function goFull(){ try { const el=document.documentElement; (el.requestFullscreen||el.webkitRequestFullscreen||(()=>{})).call(el); } catch(e){} }
+function inFull(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
+const fullSupported = !!(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen);
+
+$("go").onclick = () => {
+  if (!formOk()) return;
+  info = {name:$("sname").value.trim(), father:$("fname").value.trim(), roll:$("roll").value.trim(), section:$("sect").value};
+  const base = S.shuffleQuestions ? shuffle(questionBank) : questionBank.slice();
+  qs = base.map(x => {
+    let opts = x.options.map((t,i)=>({t:String(t), c:i===x.correctAnswer}));
+    if (S.shuffleOptions) opts = shuffle(opts);
+    return {id:x.id, q:x.question, opts};
+  });
+  answers = qs.map(()=>null);
+  idx=0; viol=0; log=[]; running=true;
+  startAt=Date.now(); endAt=startAt+S.minutes*60000;
+  goFull();
+  $("start").classList.add("hide"); $("quiz").classList.remove("hide");
+  timer = setInterval(tick, 500); tick(); show();
+};
+
+function tick(){
+  if (!running) return;
+  const left = Math.max(0, Math.ceil((endAt-Date.now())/1000));
+  $("time").textContent = `⏱ ${Math.floor(left/60)}:${String(left%60).padStart(2,"0")}`;
+  if (left<=0) finish("Time is up.");
+}
+
+function show(){
+  const cur = qs[idx];
+  $("prog").textContent = `Question ${idx+1}/${qs.length}`;
+  updViol();
+  $("q").textContent = cur.q;
+  $("opts").innerHTML = "";
+  cur.opts.forEach((o,i) => {
+    const b = document.createElement("button");
+    b.className = "opt" + (answers[idx]===i ? " sel" : ""); b.textContent = o.t;
+    b.onclick = () => { answers[idx]=i; show(); };
+    $("opts").appendChild(b);
+  });
+  $("next").textContent = idx===qs.length-1 ? "Submit" : "Next";
+}
+function updViol(){ $("viol").textContent = `Violations: ${viol}/${S.maxViolations}`; $("viol").className = viol ? "warn" : ""; }
+
+$("next").onclick = () => {
+  if (idx<qs.length-1) { idx++; show(); return; }
+  const un = answers.filter(a=>a===null).length;
+  $("cfmsg").textContent = un ? `You have ${un} unanswered question${un===1?"":"s"}. Submit anyway? You cannot change answers after submitting.` : "You have answered every question. You cannot change answers after submitting.";
+  $("cf").style.display = "flex";
+};
+$("cfno").onclick = () => { $("cf").style.display="none"; };
+$("cfyes").onclick = () => finish("You submitted the quiz.");
+
+function violation(reason){
+  if (!running) return;
+  const now = Date.now();
+  if (now - startAt < 2500) return;   // ignore events caused by entering fullscreen
+  if (now - lastV < 1500) return;
+  lastV = now; viol++; log.push(reason); updViol();
+  if (viol >= S.maxViolations) return finish(S.maxViolations<=1 ? "Auto-submitted: " + reason + "." : "Auto-submitted: too many violations.");
+  $("ovmsg").textContent = `${reason}. Violation ${viol} of ${S.maxViolations}. The quiz will be submitted automatically at ${S.maxViolations}.`;
+  $("ov").style.display = "flex";
+}
+$("back").onclick = () => { $("ov").style.display="none"; goFull(); };
+
+document.addEventListener("visibilitychange", () => { if (document.hidden) violation("You left the quiz page"); });
+window.addEventListener("blur", () => violation("The quiz window lost focus"));
+document.addEventListener("fullscreenchange", () => { if (fullSupported && running && !inFull()) violation("You exited fullscreen"); });
+document.addEventListener("webkitfullscreenchange", () => { if (fullSupported && running && !inFull()) violation("You exited fullscreen"); });
+window.addEventListener("beforeunload", e => { if (running || saving) { e.preventDefault(); e.returnValue=""; } });
+
+let lastRow = "", lastRec = null, saving = false;
+function finish(why){
+  if (!running) return;
+  running=false; clearInterval(timer); $("ov").style.display="none"; $("cf").style.display="none";
+  try { if (inFull()) (document.exitFullscreen||document.webkitExitFullscreen).call(document); } catch(e){}
+
+  let attempted=0, correct=0; const wrong=[], skipped=[];
+  qs.forEach((q,i) => {
+    const a = answers[i];
+    if (a===null) skipped.push(q.id);
+    else { attempted++; if (q.opts[a].c) correct++; else wrong.push(q.id); }
+  });
+  const total=qs.length, incorrect=attempted-correct, unatt=total-attempted;
+  const obtained=correct*S.marksPerQuestion, totalMarks=total*S.marksPerQuestion;
+  const pct = totalMarks ? (obtained/totalMarks*100).toFixed(2) : "0.00";
+  const used = Math.min(S.minutes*60, Math.round((Date.now()-startAt)/1000));
+  const num = (a,b)=>a-b;
+
+  $("quiz").classList.add("hide"); $("done").classList.remove("hide");
+  $("why").textContent = why;
+  $("score").textContent = `Score: ${obtained} / ${totalMarks} (${pct}%)`;
+  const rows = [["Student Name",info.name],["Father's Name",info.father],["Roll Number",info.roll],["Section",info.section],
+    ["Total Questions",total],["Attempted Questions",attempted],["Correct Answers",correct],["Incorrect Answers",incorrect],
+    ["Unattempted Questions",unatt],["Obtained Marks",obtained],["Total Marks",totalMarks],["Percentage",pct+"%"]];
+  $("res").innerHTML = "";
+  rows.forEach(r => { const tr=$("res").insertRow(); tr.insertCell().textContent=r[0]; const c=tr.insertCell(); c.textContent=r[1]; c.style.fontWeight="600"; });
+
+  $("sum").textContent =
+`Student Name: ${info.name}
+Father's Name: ${info.father}
+Roll Number: ${info.roll}
+Section: ${info.section}
+Quiz: ${S.title}
+Total Questions: ${total}
+Attempted: ${attempted}
+Correct: ${correct}
+Incorrect: ${incorrect}
+Unattempted: ${unatt}
+Obtained Marks: ${obtained}
+Total Marks: ${totalMarks}
+Percentage: ${pct}%
+Violations: ${viol}${log.length ? " (" + log.join("; ") + ")" : ""}
+Time used: ${Math.floor(used/60)}m ${used%60}s
+Finished: ${new Date().toLocaleString()}
+Status: ${why}
+Incorrect question numbers: ${wrong.sort(num).join(", ") || "none"}
+Unattempted question numbers: ${skipped.sort(num).join(", ") || "none"}`;
+  lastRec = {id:(window.crypto&&crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(36).slice(2)),
+    finishedAt:new Date().toISOString(), name:info.name, father:info.father, roll:info.roll, section:info.section, quiz:S.title,
+    total, attempted, correct, incorrect, unattempted:unatt, obtained, totalMarks, pct:Number(pct),
+    violations:viol, violationLog:log.join("; "), secondsUsed:used, status:why,
+    incorrectIds:wrong.join(", "), unattemptedIds:skipped.join(", ")};
+  saveResult();
+  lastRow = [info.name,info.father,info.roll,info.section,total,attempted,correct].map(v=>String(v).replace(/[\t\r\n]+/g," ")).join("\t");
+}
+
+async function saveResult(){
+  const el=$("saved"), rb=$("retry");
+  rb.classList.add("hide");
+  if (!S.resultEndpoint) { el.className="warn"; el.textContent="Result saving is not set up. Please copy your result below and send it to your teacher."; return; }
+  saving=true; el.className=""; el.textContent="Saving your result… please do not close this page.";
+  for (let n=1;n<=3;n++){
+    try {
+      const r = await fetch(S.resultEndpoint,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(lastRec)});
+      const j = await r.json();
+      if (j && j.ok) { saving=false; el.textContent="✓ Your result has been recorded. You may close this page."; return; }
+    } catch(e){}
+    await new Promise(res=>setTimeout(res,1500*n));
+  }
+  saving=false; el.className="warn";
+  el.textContent="Your result could not be saved. Check your internet connection and press Retry. If it still fails, copy the result below and send it to your teacher.";
+  rb.classList.remove("hide");
+}
+$("retry").onclick = saveResult;
+
+async function copyText(text, btn, label){
+  try { await navigator.clipboard.writeText(text); btn.textContent="Copied ✓"; }
+  catch(e){
+    const t=document.createElement("textarea"); t.value=text; t.style.position="fixed"; t.style.opacity="0"; document.body.appendChild(t); t.select();
+    let ok=false; try{ ok=document.execCommand("copy"); }catch(_){} t.remove();
+    btn.textContent = ok ? "Copied ✓" : "Select the text and copy manually";
+  }
+  setTimeout(()=>{ if(btn.textContent!==label) btn.textContent=label; }, 2500);
+}
+$("copy").onclick = () => copyText($("sum").textContent, $("copy"), "Copy result");
+$("copyrow").onclick = () => copyText(lastRow, $("copyrow"), "Copy row for Excel");
+</script>
+</body></html>
 
 
 /* ================================================
